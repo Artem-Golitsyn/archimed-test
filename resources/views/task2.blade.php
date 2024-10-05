@@ -128,7 +128,7 @@
                 // Загрузка
                 $.ajax({
                     url: '/api/house/index/',
-                    method: 'post',
+                    method: 'get',
                     dataType: "json",
                     data: props,
                     success: function (data) {
