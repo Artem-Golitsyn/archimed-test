@@ -169,14 +169,25 @@
     </div>
 
     <script>
+        // Текущая страница
         window.page = 1;
+
+        // Ключ сортировки по умолчанию
         window.order = 'id';
+
+        // Обратная сортировка
         window.desc = false;
+
+        // Статус логина с бекенда
         window.admin = {{ session('admin') ? 'true' : 'false' }};
+
+        // Данные по задачам для админских форм
         window.data = {};
 
         jQuery(document).ready(function ($) {
 
+            // Если в режиме администрирования, то скрываем кнопку логина
+            // и показываем кнопку логаута
             if (window.admin) {
                 $('#login-form').hide();
                 $('#logout').show();
@@ -185,19 +196,23 @@
                 $('#logout').hide();
             }
 
+            // загрузка
             function load() {
-                if (page < 1) {
-                    return;
-                }
 
+                // показываем лоадер
                 $('.loader').show();
                 $.ajax({
                     url: '/api/task/index/?page=' + window.page + '&order=' + window.order + '&desc=' + (window.desc ? 1 : 0),
                     dataType: "json",
                     success: function (data) {
 
+                        // Сброс таблицы
                         $("#records").empty();
+
+                        // Если администрирование - показываем дополненную таблицу с кнопками редактирования
                         if (window.admin) {
+
+                            // Заполняем таблицу
                             $.each(data.data.items, function (i, item) {
                                 window.data[item.id] = item;
                                 $('<tr>').append(
@@ -210,6 +225,7 @@
                                 ).appendTo('#records');
                             });
 
+                            // На кнопки редакрирования вешаем события показа диалога редактирования
                             $('.edit-form').on('click', function (e) {
                                 e.preventDefault();
                                 let id = $(this).attr('data-id');
@@ -227,6 +243,7 @@
                                 $('#editModal').modal('show');
                             });
                         } else {
+                            // заполнение таблицы в пользовательском режиме
                             $.each(data.data.items, function (i, item) {
                                 $('<tr>').append(
                                     $('<td>').text(item.id),
@@ -238,35 +255,45 @@
                             });
                         }
 
+                        // Сброс пагинатора
                         $("#paginator").empty();
+
+                        // Рисуем пагинатор заново
                         for (let i = 1; i <= data.data.last_page; i++) {
                             $('<li class="page-item">').append(
                                 $('<a class="page-link pager" data-page="' + i + '" onclick="" href="#">').text(i)
                             ).appendTo('#paginator');
                         }
 
+                        // На каждую кнопку постранички вешаем событие установки номера страницы и перезагрузки данных
                         $('.pager').on('click', function (e) {
                             e.preventDefault();
                             window.page = $(this).attr('data-page');
                             load();
                         });
-
-                        $('.loader').hide();
                     },
                     complete: function () {
+                        // скрываем лоадер
                         $('.loader').hide();
                     }
                 });
             }
 
+            // Сортировка
+            // На каждый элемент сортировки (заголовки колонок) вешаем событие и изменем вид если данная сортирока выбрана
             $(".sort").each(function (index) {
                 $(this).on('click', function (e) {
+                    e.preventDefault();
+
+                    // Убираем все классы сортировок
                     $(".sort").each(function (index) {
                         $(this).parent().removeClass('selected desc asc');
                     });
 
-                    e.preventDefault();
+                    // Имя сортировки
                     let order = $(this).attr('data-order');
+
+                    // Если кликнули по той же самой сортировки - изменяем порядок сортировки
                     if (order === window.order) {
                         window.desc = !window.desc;
 
@@ -276,6 +303,7 @@
                             $(this).parent().removeClass('desc').addClass('asc');
                         }
                     } else {
+                        // Устанавливаем новый порядок сортровки
                         window.order = $(this).attr('data-order');
                         $(this).parent().removeClass('desc').addClass('asc');
                         window.desc = false;
@@ -283,10 +311,13 @@
 
                     $(this).parent().addClass('selected');
 
+                    // перезагружаем
                     load();
                 });
             });
 
+            // Для события показа модального окна создания
+            // Удаляем все ранее выбранные данные и валидацию
             $('#create-form').on('click', function (e) {
                 e.preventDefault();
                 $('#createModal .need-validate').each(function (index) {
@@ -295,12 +326,14 @@
                 });
             })
 
+            // Создание задачи
             $('#create-send').on('click', function (e) {
                 e.preventDefault();
 
                 var isValidated = true;
                 var formData = {};
 
+                // Валидация
                 $('#createModal .need-validate').each(function (index) {
                     if (/^\s?$/.test($(this).val())) {
                         $(this).removeClass('is-valid').addClass('is-invalid');
@@ -312,10 +345,12 @@
                     formData[$(this).attr('data-name')] = $(this).val();
                 });
 
+                // Валидация не прошла то не сохраняем
                 if (!isValidated) {
                     return false;
                 }
 
+                // Запрос сохранения
                 $('.loader').show();
                 $.ajax({
                     url: '/api/task/store',
@@ -323,8 +358,12 @@
                     dataType: 'json',
                     data: formData,
                     success: function (data) {
+                        // тут интересно. По идее гасить модалку нужно методом modal()
+                        // но по непонятной причине такой способ зачастую намного надежнее
+                        // плюс если есть события на закрытия они вызываются
                         $('#create-cancel').click();
 
+                        // перезагрузка
                         load();
                     },
                     complete: function () {
@@ -333,12 +372,15 @@
                 });
             })
 
+            // Сохранение задачи
+            // На бекенде есть защита от вызываения сохранения без администрирования
             $('#edit-send').on('click', function (e) {
                 e.preventDefault();
 
                 var isValidated = true;
                 var formData = {};
 
+                // Валидация
                 $('#editModal .need-validate').each(function (index) {
                     if (/^\s?$/.test($(this).val())) {
                         $(this).removeClass('is-valid').addClass('is-invalid');
@@ -350,12 +392,13 @@
                     formData[$(this).attr('data-name')] = $(this).val();
                 });
 
+                // Валидация не прошла то не сохраняем
                 if (!isValidated) {
                     return false;
                 }
 
+                // Запрос сохранения
                 formData['admin_check'] = $('#admin_check').is(':checked') ? 1 : 0;
-
                 $('.loader').show();
                 $.ajax({
                     url: '/api/task/store',
@@ -363,8 +406,12 @@
                     dataType: 'json',
                     data: formData,
                     success: function (data) {
+                        // тут интересно. По идее гасить модалку нужно методом modal()
+                        // но по непонятной причине такой способ зачастую намного надежнее
+                        // плюс если есть события на закрытия они вызываются
                         $('#edit-cancel').click();
 
+                        // перезагрузка
                         load();
                     },
                     complete: function () {
@@ -373,12 +420,14 @@
                 });
             })
 
+            // Авторизация
             $('#auth-send').on('click', function (e) {
                 e.preventDefault();
 
                 var isValidated = true;
                 var formData = {};
 
+                // проверка заполненности
                 $('#loginModal .need-validate').each(function (index) {
                     if (/^\s?$/.test($(this).val())) {
                         $(this).removeClass('is-valid').addClass('is-invalid');
@@ -389,6 +438,7 @@
                     formData[$(this).attr('data-name')] = $(this).val();
                 });
 
+                // Если что-то пусто - выкидываем
                 if (!isValidated) {
                     return false;
                 }
@@ -400,18 +450,19 @@
                     dataType: 'json',
                     data: formData,
                     success: function (data) {
+
+                        // Установка админсткого режима
                         window.admin = true;
 
-                        // да, я вкурсе что тут можно $('#loginModal').modal('hide');
-                        // Но так срабатывает надежнее
+                        // Прячим окно, скрывааем кнопку авторизации, показываем логаут
                         $('#auth-cancel').click();
-
                         $('#login-form').hide();
                         $('#logout').show();
 
                         load();
                     },
                     error: function () {
+                        // Показываем что логин/пароль указаны неверно
                         $('#loginError').show();
                     },
                     complete: function () {
@@ -420,6 +471,7 @@
                 });
             })
 
+            // Логаут
             $('#logout').on('click', function (e) {
                 e.preventDefault();
                 $('.loader').show();
@@ -427,8 +479,12 @@
                     url: '/api/logout',
                     method: 'post',
                     success: function (data) {
+
+                        // переход в пользовательски режим
                         window.admin = false;
                         window.data = {};
+
+                        // показываем кнопку авторизации, скрываем логаут
                         $('#login-form').show();
                         $('#logout').hide();
 
@@ -440,6 +496,7 @@
                 });
             });
 
+            // начальная загрузка
             load();
         });
     </script>

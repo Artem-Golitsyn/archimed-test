@@ -7,10 +7,10 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href="/task1">Задание 1</a>
+                    <a class="nav-link {{ Route::is('task1') ? 'active' : '' }}" aria-current="page" href="/task1">Задание 1</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/task2">Задание 2</a>
+                    <a class="nav-link {{ Route::is('task2') ? 'active' : '' }}" href="/task2">Задание 2</a>
                 </li>
             </ul>
         </div>
