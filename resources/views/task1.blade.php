@@ -261,7 +261,7 @@
                         // Рисуем пагинатор заново
                         for (let i = 1; i <= data.data.last_page; i++) {
                             $('<li class="page-item">').append(
-                                $('<a class="page-link pager" data-page="' + i + '" onclick="" href="#">').text(i)
+                                $('<a class="page-link pager ' + (i === parseInt(window.page) ? 'selected' : '') + '" data-page="' + i + '" onclick="" href="#">').text(i)
                             ).appendTo('#paginator');
                         }
 
